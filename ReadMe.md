@@ -1,0 +1,1 @@
+This is a rough demonstration of ray tracing. At the current moment, it takes several seconds to generate a single frame (SPF, am I right), but it provides insight over linear algebra and other details
