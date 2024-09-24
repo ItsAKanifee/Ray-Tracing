@@ -51,65 +51,81 @@ class Ray{ //  a ray will have two vector variables, origin and direction
     }
 }
 
-const sphere1 = { // make a test sphere
-    center: [-500,-50,30], // everything will be in front of the screen, therfore z should always be positive
+const sphere1 = { // green sphere
+    center: [-500,-50,300], // everything will be in front of the screen, therfore z should always be positive
     radius: 100,
     color : [0,255,0],
     specular: 500,
+    reflect: 0.3,
 }
 
-const sphere2 = {
-    center: [500,50,10], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
+const sphere2 = { // red sphere
+    center: [-300,-0,300], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
     radius: 100,
     color : [255, 0, 0],
-    specular: 15,
+    specular: 300,
+    reflect: 0.4,
 }
 
-const sphere3 = {
-    center: [0,0,-7],
+const sphere3 = { // blue sphere
+    center: [0,0,500],
     radius: 100,
     color : [0, 0, 255],
     specular: 1000,
+    reflect: 0.5,
 }
 
 const spheres = [sphere1, sphere2, sphere3];
 
+function sphereIntersect(origin, direction, sphere){
+    t = Infinity;
 
-function rayCast(ray){
+    let disp = sub(origin, sphere.center);
 
+    let a = dot(direction, direction); // solving for the distance of the ray upon interesecting with the sphere we get the values of a , b, and c
+    let b = 2 * dot(direction, disp);
+    let c = dot(disp, disp) - sphere.radius*sphere.radius;
+    let discriminant = b*b - 4*a*c; 
+
+    if(discriminant > 0){
+
+    let t1 = (-b - Math.sqrt(discriminant)) / (2*a);
+    let t2 = (-b + Math.sqrt(discriminant)) / (2*a);
+
+        if(t1 > 0 && t1 < t){
+            t = t1;
+        } else if(t2 > 0 && t2 < t){
+            t = t2;
+        }
+    }
+
+    return t;
+}
+
+function shortestSphere(origin, direction){
     let minT = Infinity;
     let sphereActive = null;
     
 
-    for(let i = 0;i < spheres.length;i++){
-        let t = Infinity; // cast a ray t distance away from the screen
-
+    for(let i = 0; i < spheres.length;i++){
         let sphere = spheres[i];
+        let t = sphereIntersect(origin, direction, sphere);
 
-        let disp = sub(ray.origin, sphere.center);
-
-        let a = dot(ray.direction, ray.direction); // solving for the distance of the ray upon interesecting with the sphere we get the values of a , b, and c
-        let b = 2 * dot(ray.direction, disp);
-        let c = dot(disp, disp) - sphere.radius*sphere.radius;
-        let discriminant = b*b - 4*a*c; 
-
-        if(discriminant > 0){
-
-        let t1 = (-b - Math.sqrt(discriminant)) / (2*a);
-        let t2 = (-b + Math.sqrt(discriminant)) / (2*a);
-
-            if(t1 > 0 && t1 < t){
-                t = t1;
-            } else if(t2 > 0 && t2 < t){
-                t = t2;
-            }
-
-            if (t < minT){
-                minT = t;
-                sphereActive = sphere;
-            }
+        if (t < minT){
+            minT = t;
+            sphereActive = sphere;
         }
     }
+
+    return [minT, sphereActive];
+}
+
+
+
+
+function rayCast(ray){
+
+    let [minT, sphereActive] = shortestSphere(ray.origin, ray.direction);
 
     if (minT != Infinity){
         ray.hit = true;
@@ -122,13 +138,65 @@ function rayCast(ray){
 
 
         let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular));
+        
 
+        let r = sphereActive.reflect;
+
+        if(r > 0){
+            let DR = dot(D, Normal);
+            let R = sub(scale(Normal, 2*DR), D);
+
+            let reflected = reflect(Point, R, 3);
+
+            console.log(reflected);
+
+            let fHalf = scale(RGB, 1-r);
+            let sHalf = scale(reflected, r);
+
+            RGB = add(fHalf, sHalf);
+        }
+        
         ray.color = rgb(RGB[0], RGB[1], RGB[2]);
+        
     }
     
     ray.distance = minT; // intensity of illumination is intesity of light / (distance of camera to object)^2
     return ray;
 
+}
+
+
+function reflect(point, direction, reflections){ // returns the reflected light of the ray
+    let [minT, sphereActive] = shortestSphere(point, direction);
+
+    if(sphereActive == null){
+        return [0,0,0];
+    }
+    var Point = add(point, scale(direction, minT));
+    var Normal = sub(Point, sphereActive.center);
+    Normal = normalize(Normal);
+
+    let D = scale(direction, -1);
+
+
+    let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular));
+
+    let r = sphereActive.reflect;
+
+    if(r <= 0 || reflections <= 0){
+        return RGB;
+    }
+
+    let DR = dot(D, Normal);
+    let R = sub(scale(Normal, 2*DR), D);
+
+    let reflected = reflect(Point, R, reflections - 1);
+
+    let fHalf = scale(RGB, 1-r);
+    let sHalf = scale(reflected, r);
+
+    return add(fHalf, sHalf);
+    
 }
 
 function Luminence(point, normal, toCam, specular){ // returns the direct light of the ray
@@ -139,7 +207,7 @@ function Luminence(point, normal, toCam, specular){ // returns the direct light 
         if(light.type == 'ambient'){
             lumin += light.intensity;
         }else{
-            let L = [0,0,0];
+            let L = [0,0,0]; // direction of the light
 
             if(light.type == 'point'){
                 L = sub(light.pos, point);
@@ -154,6 +222,13 @@ function Luminence(point, normal, toCam, specular){ // returns the direct light 
                 lumin += light.intensity * nL / (magnitude(normal)*magnitude(L));
             }
 
+            // calculate the shadow
+
+            let [shortestT, shadSphere] = shortestSphere(point, L);
+            if(shadSphere != null){
+                limun = 0;
+                console.log("hit");
+            }
 
             // calcualte the specular (shinyness) of thee spheres
 
