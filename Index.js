@@ -54,19 +54,22 @@ class Ray{ //  a ray will have two vector variables, origin and direction
 const sphere1 = { // make a test sphere
     center: [-500,-50,30], // everything will be in front of the screen, therfore z should always be positive
     radius: 100,
-    color : [0,255,0]
+    color : [0,255,0],
+    specular: 500,
 }
 
 const sphere2 = {
     center: [500,50,10], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
     radius: 100,
-    color : [255, 0, 0]
+    color : [255, 0, 0],
+    specular: 15,
 }
 
 const sphere3 = {
     center: [0,0,-7],
     radius: 100,
-    color : [0, 0, 255]
+    color : [0, 0, 255],
+    specular: 1000,
 }
 
 const spheres = [sphere1, sphere2, sphere3];
@@ -115,7 +118,10 @@ function rayCast(ray){
         var Normal = sub(Point, sphereActive.center);
         Normal = normalize(Normal);
 
-        let RGB = scale(sphereActive.color, Luminence(Point, Normal));
+        let D = scale(ray.direction, -1);
+
+
+        let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular));
 
         ray.color = rgb(RGB[0], RGB[1], RGB[2]);
     }
@@ -125,7 +131,7 @@ function rayCast(ray){
 
 }
 
-function Luminence(point, normal){ // returns the direct light of the ray
+function Luminence(point, normal, toCam, specular){ // returns the direct light of the ray
     var lumin = 0.0;
     for(let i = 0; i < lights.length; i++){
         let light = lights[i];
@@ -147,6 +153,20 @@ function Luminence(point, normal){ // returns the direct light of the ray
             if(nL > 0){
                 lumin += light.intensity * nL / (magnitude(normal)*magnitude(L));
             }
+
+
+            // calcualte the specular (shinyness) of thee spheres
+
+            if(specular != -1){      
+                let R = sub(scale(normal, 2*nL), L); // 2 * N * dot(N, L) - L
+                
+                let rToCam = dot(R, toCam);
+
+                if(rToCam > 0){
+                    lumin += light.intensity * Math.pow(rToCam / (magnitude(R)*magnitude(toCam)), specular);
+                }
+            }
+            
         }
     }
 
