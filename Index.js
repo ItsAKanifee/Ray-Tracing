@@ -4,19 +4,34 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
+
+
 //Screen is located at (0, 0, 0)
 
 
-const Light = { // put the light above the origin
-    x: 0,
-    y: 50,
-    z: 0,
+const lightPoint = { // put the light above the origin
+    pos: [0, -canvas.height/2, 20],
+    intensity: 0.6,
+    type: 'point',
 }
 
+const ambLight = {
+    intensity: 0.2,
+    type: 'ambient',
+}
+
+const dirLight = {
+    direction: [1, 5, -1],
+    intensity: 0.8,
+    type: 'directional',
+}
+
+const lights = [lightPoint, ambLight, dirLight];
+
 const Eye = { // put the eye (of the beholder) in the middle of the screen, a distance back from the screen
-    x: 0,
+    x: 0, // x is 0 and y is 0 at the center of the screen
     y: 0,
-    z: -2000,
+    z: -2000, // eye is 2000 pixels away from the screen
 }
 
 const Wall = 0; // xLoc of the wall, assuming infinite height and depth
@@ -32,30 +47,35 @@ class Ray{ //  a ray will have two vector variables, origin and direction
         this.direction = normalize([x,y,-Eye.z]); // direction is the normal vector of the viewers eye to the array of the screen
         this.hit = false;
         this.distance = Infinity;
-        this.intensity = 0;
+        this.color = 'black';
     }
 }
 
 const sphere1 = { // make a test sphere
     center: [-500,-50,30], // everything will be in front of the screen, therfore z should always be positive
-    radius: 100
+    radius: 100,
+    color : [0,255,0]
 }
 
 const sphere2 = {
-    center: [500,50,10],
-    radius: 100
+    center: [500,50,10], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
+    radius: 100,
+    color : [255, 0, 0]
 }
 
 const sphere3 = {
-    center: [0,0,7],
-    radius: 100
+    center: [0,0,-7],
+    radius: 100,
+    color : [0, 0, 255]
 }
 
 const spheres = [sphere1, sphere2, sphere3];
 
+
 function rayCast(ray){
 
     let minT = Infinity;
+    let sphereActive = null;
     
 
     for(let i = 0;i < spheres.length;i++){
@@ -83,12 +103,21 @@ function rayCast(ray){
 
             if (t < minT){
                 minT = t;
+                sphereActive = sphere;
             }
         }
     }
 
     if (minT != Infinity){
         ray.hit = true;
+
+        var Point = add(ray.origin, scale(ray.direction, minT));
+        var Normal = sub(Point, sphereActive.center);
+        Normal = normalize(Normal);
+
+        let RGB = scale(sphereActive.color, Luminence(Point, Normal));
+
+        ray.color = rgb(RGB[0], RGB[1], RGB[2]);
     }
     
     ray.distance = minT; // intensity of illumination is intesity of light / (distance of camera to object)^2
@@ -96,13 +125,32 @@ function rayCast(ray){
 
 }
 
-function Luminence(point){ // returns the direct light of the ray
-    return Math.sqrt((Light.x + point[0])**2 + (Light.y + point[1]) **2 + (Light.z + point[2]) ** 2);
+function Luminence(point, normal){ // returns the direct light of the ray
+    var lumin = 0.0;
+    for(let i = 0; i < lights.length; i++){
+        let light = lights[i];
 
-}
+        if(light.type == 'ambient'){
+            lumin += light.intensity;
+        }else{
+            let L = [0,0,0];
 
-function obstructed(ray){
+            if(light.type == 'point'){
+                L = sub(light.pos, point);
+            }
+            else{
+                L = light.direction;
+            }
 
+            var nL = dot(normal, L);
+
+            if(nL > 0){
+                lumin += light.intensity * nL / (magnitude(normal)*magnitude(L));
+            }
+        }
+    }
+
+    return lumin;
 }
 
 
@@ -113,7 +161,7 @@ function dot(a,b){
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
 
-function scale(a, b){
+function scale(a, b){ // a is vector, b is scale
     return [a[0]*b, a[1]*b, a[2]*b];
 }
 
@@ -146,19 +194,8 @@ function render(){
 
             let ray = new Ray(x-canvas.width/2, y-canvas.height/2); // make a ray at each pixel, and make sure the graph gets translated to halfwaay on the screen
             rayCast(ray); // cast the ray
-
-            if(ray.hit){
-                ctx.fillStyle = rgb(255,ray.distance,ray.distance);
                 
-            }
-                
-            else if(ray.direction[1] > 0){
-                ctx.fillStyle = 'purple';
-            }
-            
-            else{
-                ctx.fillStyle = rgb(0,0,0);
-            }
+            ctx.fillStyle = ray.color;
             
 
             ctx.fillRect(x,y,1,1);
