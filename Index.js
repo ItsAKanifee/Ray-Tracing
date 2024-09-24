@@ -56,15 +56,15 @@ const sphere1 = { // green sphere
     radius: 100,
     color : [0,255,0],
     specular: 500,
-    reflect: 0.3,
+    reflect: 0,
 }
 
 const sphere2 = { // red sphere
-    center: [-300,-0,300], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
+    center: [300,-0,300], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
     radius: 100,
     color : [255, 0, 0],
-    specular: 300,
-    reflect: 0.4,
+    specular: 500,
+    reflect: 0.1,
 }
 
 const sphere3 = { // blue sphere
@@ -146,7 +146,7 @@ function rayCast(ray){
             let DR = dot(D, Normal);
             let R = sub(scale(Normal, 2*DR), D);
 
-            let reflected = reflect(Point, R, 3);
+            let reflected = reflect(Point, R, 5);
 
             console.log(reflected);
 
@@ -172,6 +172,7 @@ function reflect(point, direction, reflections){ // returns the reflected light 
     if(sphereActive == null){
         return [0,0,0];
     }
+
     var Point = add(point, scale(direction, minT));
     var Normal = sub(Point, sphereActive.center);
     Normal = normalize(Normal);
@@ -227,7 +228,6 @@ function Luminence(point, normal, toCam, specular){ // returns the direct light 
             let [shortestT, shadSphere] = shortestSphere(point, L);
             if(shadSphere != null){
                 limun = 0;
-                console.log("hit");
             }
 
             // calcualte the specular (shinyness) of thee spheres
