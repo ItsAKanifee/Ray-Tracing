@@ -4,13 +4,14 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-
+const pt = canvas.height/100;
+console.log(pt);
 
 //Screen is located at (0, 0, 0)
-const floorDepth = 400;
+const floorDepth = 52 * pt;
 const LeftWallPos = - canvas.width/2;
 const RightWallPos = canvas.width/2;
-const backwallDepth = 2000
+const backwallDepth = 260 * pt;
 
 const lightPoint = { // put the light above the origin
     pos: [0, -canvas.height/2, 20],
@@ -36,11 +37,6 @@ const Eye = { // put the eye (of the beholder) in the middle of the screen, a di
     y: 0,
     z: -2000, // eye is 2000 pixels away from the screen
 }
-
-const Wall = 0; // xLoc of the wall, assuming infinite height and depth
-
-const Wall2 = canvas.width; // for simplicity, we can assume the walls are infinite, then find how far a beam, will have to travel to hit on of the walls
-
 
 class Ray{ //  a ray will have two vector variables, origin and direction
     
@@ -80,6 +76,9 @@ const sphere3 = { // blue sphere
 
 const spheres = [sphere1, sphere2, sphere3];
 
+//------------------------------------------
+//Rendering Methods
+
 function sphereIntersect(origin, direction, sphere){
     t = Infinity;
 
@@ -90,7 +89,7 @@ function sphereIntersect(origin, direction, sphere){
     let c = dot(disp, disp) - sphere.radius*sphere.radius;
     let discriminant = b*b - 4*a*c; 
 
-    if(discriminant > 0){
+    if(discriminant > 0){ // if discriminant is < 0, distance will be imginary, implying that the ray does not intersect with the sphere
 
     let t1 = (-b - Math.sqrt(discriminant)) / (2*a);
     let t2 = (-b + Math.sqrt(discriminant)) / (2*a);
@@ -105,7 +104,7 @@ function sphereIntersect(origin, direction, sphere){
     return t;
 }
 
-function shortestSphere(origin, direction){
+function shortestSphere(origin, direction){ // finds the sphere that is the shortest distance away from the origin
     let minT = Infinity;
     let sphereActive = null;
     
@@ -140,7 +139,7 @@ function rayCast(ray){
         let D = scale(ray.direction, -1);
 
 
-        let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular));
+        let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular)); // scale up the RGB with the luminosity of the point
         
 
         let r = sphereActive.reflect;
@@ -150,8 +149,6 @@ function rayCast(ray){
             let R = sub(scale(Normal, 2*DR), D);
 
             let reflected = reflect(Point, R, 5);
-
-            console.log(reflected);
 
             let fHalf = scale(RGB, 1-r);
             let sHalf = scale(reflected, r);
@@ -231,6 +228,7 @@ function Luminence(point, normal, toCam, specular){ // returns the direct light 
             let [shortestT, shadSphere] = shortestSphere(point, L);
             if(shadSphere != null){
                 limun = 0;
+                continue;
             }
 
             // calcualte the specular (shinyness) of thee spheres
@@ -304,10 +302,14 @@ function render(){
     }
 }
 
+//----------------------------------
+// Wall operations
+
 function floorOrWall(point, direciton){ // calculates the distance of the ray to each plane, and calulates which one is the shortest disitance
     let t = Infinity;
     let color = [0,0,0];
     let xDist1 = Infinity, xDist2 = Infinity;
+    let norm = [0,0,0] // set the normal as facing no direction
     
     if(direciton[0] != 0){
         xDist1 = Math.abs((-canvas.width/2 - point[0])/direciton[0]); // using Dx + P = t, we can get the distance t of the screen to each wall/ floor
@@ -317,25 +319,31 @@ function floorOrWall(point, direciton){ // calculates the distance of the ray to
     let yDist = Math.abs((floorDepth - point[1])/direciton[1]);
     let zDist = Math.abs((backwallDepth - point[2])/direciton[2]);
 
+    color = [50,160,95];
+
     if(xDist1 < yDist && xDist1 < zDist){
         t = xDist1;
-        color = [50,160,95];
+        //color = [50,160,95];
+        norm = [1,0,0]; // the normal will face the opposite direction of the wall in respect to the center
     }else if(xDist2 < yDist && xDist2 < zDist){
         t = xDist2;
-        color = [50,160,95];
+        //color = [50,160,95];
+        norm = [-1,0,0];
     }   
 
     else if(yDist < zDist){ // wants to render floor
         t = yDist; 
-        color = [60, 195, 100];
+        //color = [60, 195, 100];
+        norm = [0,1,0];
     }
         
     else{
         t = zDist;
-        color = [100, 200, 150];
+        //color = [100, 200, 150];
+        norm = [0,0,-1];
     }
-    
-    color = scale(color, 300/t);
+    let D = scale(direciton, -1);
+    color = scale(color, Luminence(point, norm, D, 100));
     return color;
 }
 
