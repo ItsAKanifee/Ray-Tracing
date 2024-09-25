@@ -1,1 +1,3 @@
-This is a rough demonstration of ray tracing. At the current moment, it takes several seconds to generate a single frame (SPF, am I right), but it provides insight over linear algebra and other details
+This is a rough demonstration of ray tracing. At the current moment, it takes several seconds to generate a single frame (SPF, am I right), but it provides insight over linear algebra and other details. Most of the work was done through https://gabrielgambetta.com/computer-graphics-from-scratch/02-basic-raytracing.html.
+
+First of all, as stated before, this takes a long time to render. Other problems include the grainy surface of reflective surfaces. A bit more debugging is neccessary to make the code work, but for right now, it fits its purpose. Futhermore, the depth of the balls seems to be off when in context to the room. This could be due to the fact that 

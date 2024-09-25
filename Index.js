@@ -325,8 +325,8 @@ function floorOrWall(point, direciton){ // calculates the distance of the ray to
         color = [50,160,95];
     }   
 
-    else if(yDist < zDist){
-        t = yDist;
+    else if(yDist < zDist){ // wants to render floor
+        t = yDist; 
         color = [60, 195, 100];
     }
         
