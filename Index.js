@@ -7,7 +7,10 @@ canvas.height = window.innerHeight;
 
 
 //Screen is located at (0, 0, 0)
-
+const floorDepth = 400;
+const LeftWallPos = - canvas.width/2;
+const RightWallPos = canvas.width/2;
+const backwallDepth = 2000
 
 const lightPoint = { // put the light above the origin
     pos: [0, -canvas.height/2, 20],
@@ -52,7 +55,7 @@ class Ray{ //  a ray will have two vector variables, origin and direction
 }
 
 const sphere1 = { // green sphere
-    center: [-500,-50,300], // everything will be in front of the screen, therfore z should always be positive
+    center: [-500,300,400], // everything will be in front of the screen, therfore z should always be positive
     radius: 100,
     color : [0,255,0],
     specular: 500,
@@ -60,16 +63,16 @@ const sphere1 = { // green sphere
 }
 
 const sphere2 = { // red sphere
-    center: [300,-0,300], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
-    radius: 100,
+    center: [500,250,600], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
+    radius: 150,
     color : [255, 0, 0],
-    specular: 500,
-    reflect: 0.1,
+    specular: 300,
+    reflect: 0.05,
 }
 
 const sphere3 = { // blue sphere
-    center: [0,0,500],
-    radius: 100,
+    center: [0,150,1500],
+    radius: 250,
     color : [0, 0, 255],
     specular: 1000,
     reflect: 0.5,
@@ -170,14 +173,14 @@ function reflect(point, direction, reflections){ // returns the reflected light 
     let [minT, sphereActive] = shortestSphere(point, direction);
 
     if(sphereActive == null){
-        return [0,0,0];
+        return floorOrWall(point, direction);
     }
 
     var Point = add(point, scale(direction, minT));
     var Normal = sub(Point, sphereActive.center);
     Normal = normalize(Normal);
 
-    let D = scale(direction, -1);
+    let D = scale(direction, -1); // get the negative vector
 
 
     let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular));
@@ -289,18 +292,54 @@ function render(){
 
             let ray = new Ray(x-canvas.width/2, y-canvas.height/2); // make a ray at each pixel, and make sure the graph gets translated to halfwaay on the screen
             rayCast(ray); // cast the ray
-                
+
+            if(!ray.hit){
+                let temp = floorOrWall(ray.origin, ray.direction)
+                ray.color = rgb(temp[0], temp[1], temp[2]);
+            }
             ctx.fillStyle = ray.color;
-            
 
             ctx.fillRect(x,y,1,1);
         }
     }
 }
 
-function wallIntersection(ray, wall){ // returns the distance of the ray for when it hits the wall
-    return Math.abs(wall - ray.origin[0]/ray.direction[0]);
+function floorOrWall(point, direciton){ // calculates the distance of the ray to each plane, and calulates which one is the shortest disitance
+    let t = Infinity;
+    let color = [0,0,0];
+    let xDist1 = Infinity, xDist2 = Infinity;
+    
+    if(direciton[0] != 0){
+        xDist1 = Math.abs((-canvas.width/2 - point[0])/direciton[0]); // using Dx + P = t, we can get the distance t of the screen to each wall/ floor
+        xDist2 = Math.abs((canvas.width/2 - point[0])/direciton[0]);
+    }
+    
+    let yDist = Math.abs((floorDepth - point[1])/direciton[1]);
+    let zDist = Math.abs((backwallDepth - point[2])/direciton[2]);
+
+    if(xDist1 < yDist && xDist1 < zDist){
+        t = xDist1;
+        color = [50,160,95];
+    }else if(xDist2 < yDist && xDist2 < zDist){
+        t = xDist2;
+        color = [50,160,95];
+    }   
+
+    else if(yDist < zDist){
+        t = yDist;
+        color = [60, 195, 100];
+    }
+        
+    else{
+        t = zDist;
+        color = [100, 200, 150];
+    }
+    
+    color = scale(color, 300/t);
+    return color;
 }
+
+
 
 
 function rgb(r,g,b){
