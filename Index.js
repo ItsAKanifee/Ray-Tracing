@@ -12,10 +12,10 @@ const floorDepth = 52 * pt;
 const LeftWallPos = - canvas.width/2;
 const RightWallPos = canvas.width/2;
 const backwallDepth = 260 * pt;
-const ceilingHeight = -40 * pt;
+const ceilingHeight = -50 * pt;
 
 const lightPoint = { // put the light above the origin
-    pos: [canvas.width/2, -canvas.height/2, 0],
+    pos: [0, -canvas.height/2, 0],
     intensity: 0.6,
     type: 'point',
 }
@@ -26,7 +26,7 @@ const ambLight = {
 }
 
 const dirLight = {
-    direction: [-canvas.width/2, -52 * pt, 260 * pt],
+    direction: [0, -pt, pt],
     intensity: 0.2,
     type: 'directional',
 }
@@ -36,7 +36,7 @@ const lights = [lightPoint, ambLight, dirLight];
 const Eye = { // put the eye (of the beholder) in the middle of the screen, a distance back from the screen
     x: 0, // x is 0 and y is 0 at the center of the screen
     y: 0,
-    z: -260 * pt, // eye is 2000 pixels away from the screen
+    z: -100 * pt, // eye is 2000 pixels away from the screen
 }
 
 class Ray{ //  a ray will have two vector variables, origin and direction
@@ -52,24 +52,24 @@ class Ray{ //  a ray will have two vector variables, origin and direction
 }
 
 const sphere1 = { // green sphere
-    center: [-66*pt,40*pt,52*pt], // everything will be in front of the screen, therfore z should always be positive
-    radius: 100,
+    center: [-66*pt,30*pt,52*pt], // everything will be in front of the screen, therfore z should always be positive
+    radius: 13 * pt,
     color : [0,255,0],
     specular: 1000,
     reflect: 0,
 }
 
 const sphere2 = { // red sphere
-    center: [66*pt,250,600], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
-    radius: 250,
+    center: [66*pt, 20*pt, 78*pt], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
+    radius: 32*pt,
     color : [255, 0, 0],
     specular: 300,
     reflect: 0.1,
 }
 
 const sphere3 = { // blue sphere
-    center: [0,150,1500],
-    radius: 250,
+    center: [0, 0, 194*pt],
+    radius: 32*pt,
     color : [0, 0, 255],
     specular: 200,
     reflect: 0.6,
@@ -323,22 +323,29 @@ function floorOrWall(point, direciton){ // calculates the distance of the ray to
     }
     
     let yDist = Math.abs((floorDepth - point[1])/direciton[1]); // both of these directions cannot be 0 based on how the code works 
+    let yDist2 = Math.abs((ceilingHeight - point[1])/direciton[1]);
     let zDist = Math.abs((backwallDepth - point[2])/direciton[2]);
 
-    color = [50,160,95];
+    color = [222,11,138];
 
-    if(xDist1 < yDist && xDist1 < zDist){
+    if(xDist1 < yDist && xDist1 < zDist && xDist1 < xDist2 && xDist1 < yDist2){
         t = xDist1;
         //color = [50,160,95];
-        norm = [-1,0,0]; // the normal will face the opposite direction of the wall in respect to the center
-    }else if(xDist2 < yDist && xDist2 < zDist){
+        norm = [1,0,0]; // the normal will face the opposite direction of the wall in respect to the center
+    }else if(xDist2 < yDist && xDist2 < zDist && xDist2 < xDist1 && xDist2 < yDist2){
         t = xDist2;
         //color = [50,160,95];
-        norm = [1,0,0];
+        norm = [-1,0,0];
     }   
 
-    else if(yDist < zDist){ // wants to render floor
+    else if(yDist < zDist && yDist < yDist2){ // wants to render floor
         t = yDist; 
+        //color = [60, 195, 100];
+        norm = [0,-1,0];
+    }
+
+    else if(yDist2 < zDist){ // wants to render ceiling
+        t = yDist2;
         //color = [60, 195, 100];
         norm = [0,1,0];
     }
@@ -349,7 +356,7 @@ function floorOrWall(point, direciton){ // calculates the distance of the ray to
         norm = [0,0,1];
     }
     let D = scale(direciton, -1);
-    color = scale(color, Luminence(point, norm, D, 100));
+    color = scale(color, Luminence(point, norm, D, 1000));
     return color;
 }
 
