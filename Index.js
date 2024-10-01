@@ -12,9 +12,10 @@ const floorDepth = 52 * pt;
 const LeftWallPos = - canvas.width/2;
 const RightWallPos = canvas.width/2;
 const backwallDepth = 260 * pt;
+const ceilingHeight = -40 * pt;
 
 const lightPoint = { // put the light above the origin
-    pos: [0, -canvas.height/2, 20],
+    pos: [canvas.width/2, canvas.height/2, 0],
     intensity: 0.6,
     type: 'point',
 }
@@ -25,8 +26,8 @@ const ambLight = {
 }
 
 const dirLight = {
-    direction: [1, 5, -1],
-    intensity: 0.8,
+    direction: [-1, 4, 4],
+    intensity: 0.2,
     type: 'directional',
 }
 
@@ -35,7 +36,7 @@ const lights = [lightPoint, ambLight, dirLight];
 const Eye = { // put the eye (of the beholder) in the middle of the screen, a distance back from the screen
     x: 0, // x is 0 and y is 0 at the center of the screen
     y: 0,
-    z: -2000, // eye is 2000 pixels away from the screen
+    z: -260 * pt, // eye is 2000 pixels away from the screen
 }
 
 class Ray{ //  a ray will have two vector variables, origin and direction
@@ -51,7 +52,7 @@ class Ray{ //  a ray will have two vector variables, origin and direction
 }
 
 const sphere1 = { // green sphere
-    center: [-500,300,400], // everything will be in front of the screen, therfore z should always be positive
+    center: [-66*pt,40*pt,52*pt], // everything will be in front of the screen, therfore z should always be positive
     radius: 100,
     color : [0,255,0],
     specular: 500,
@@ -59,18 +60,18 @@ const sphere1 = { // green sphere
 }
 
 const sphere2 = { // red sphere
-    center: [500,250,600], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
+    center: [66*pt,250,600], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
     radius: 150,
     color : [255, 0, 0],
     specular: 300,
-    reflect: 0.05,
+    reflect: 0.1,
 }
 
 const sphere3 = { // blue sphere
     center: [0,150,1500],
     radius: 250,
     color : [0, 0, 255],
-    specular: 1000,
+    specular: 200,
     reflect: 0.5,
 }
 
@@ -136,10 +137,10 @@ function rayCast(ray){
         var Normal = sub(Point, sphereActive.center);
         Normal = normalize(Normal);
 
-        let D = scale(ray.direction, -1);
+        let D = scale(ray.direction, -1); // make the direction from object to camera
 
 
-        let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular)); // scale up the RGB with the luminosity of the point
+        let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular, sphereActive)); // scale up the RGB with the luminosity of the point
         
 
         let r = sphereActive.reflect;
@@ -148,13 +149,14 @@ function rayCast(ray){
             let DR = dot(D, Normal);
             let R = sub(scale(Normal, 2*DR), D);
 
-            let reflected = reflect(Point, R, 5);
+            let reflected = reflect(Point, R, 20);
 
             let fHalf = scale(RGB, 1-r);
             let sHalf = scale(reflected, r);
 
             RGB = add(fHalf, sHalf);
         }
+        
         
         ray.color = rgb(RGB[0], RGB[1], RGB[2]);
         
@@ -180,7 +182,7 @@ function reflect(point, direction, reflections){ // returns the reflected light 
     let D = scale(direction, -1); // get the negative vector
 
 
-    let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular));
+    let RGB = scale(sphereActive.color, Luminence(Point, Normal, D, sphereActive.specular, sphereActive));
 
     let r = sphereActive.reflect;
 
@@ -200,13 +202,14 @@ function reflect(point, direction, reflections){ // returns the reflected light 
     
 }
 
-function Luminence(point, normal, toCam, specular){ // returns the direct light of the ray
+function Luminence(point, normal, toCam, specular, sphere = null){ // returns the direct light of the ray
     var lumin = 0.0;
     for(let i = 0; i < lights.length; i++){
         let light = lights[i];
 
         if(light.type == 'ambient'){
             lumin += light.intensity;
+
         }else{
             let L = [0,0,0]; // direction of the light
 
@@ -217,19 +220,22 @@ function Luminence(point, normal, toCam, specular){ // returns the direct light 
                 L = light.direction;
             }
 
+             // calculate the shadow
+
+             let [shortestT, shadSphere] = shortestSphere(point, L);
+             if(shadSphere != null && shadSphere != sphere){
+                    continue;
+             }
+
+             //calculate the luminosity
+
             var nL = dot(normal, L);
 
             if(nL > 0){
                 lumin += light.intensity * nL / (magnitude(normal)*magnitude(L));
             }
 
-            // calculate the shadow
-
-            let [shortestT, shadSphere] = shortestSphere(point, L);
-            if(shadSphere != null){
-                limun = 0;
-                continue;
-            }
+           
 
             // calcualte the specular (shinyness) of thee spheres
 
@@ -316,7 +322,7 @@ function floorOrWall(point, direciton){ // calculates the distance of the ray to
         xDist2 = Math.abs((canvas.width/2 - point[0])/direciton[0]);
     }
     
-    let yDist = Math.abs((floorDepth - point[1])/direciton[1]);
+    let yDist = Math.abs((floorDepth - point[1])/direciton[1]); // both of these directions cannot be 0 based on how the code works 
     let zDist = Math.abs((backwallDepth - point[2])/direciton[2]);
 
     color = [50,160,95];
