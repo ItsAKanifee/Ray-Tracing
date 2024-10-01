@@ -330,11 +330,11 @@ function floorOrWall(point, direciton){ // calculates the distance of the ray to
     if(xDist1 < yDist && xDist1 < zDist){
         t = xDist1;
         //color = [50,160,95];
-        norm = [1,0,0]; // the normal will face the opposite direction of the wall in respect to the center
+        norm = [-1,0,0]; // the normal will face the opposite direction of the wall in respect to the center
     }else if(xDist2 < yDist && xDist2 < zDist){
         t = xDist2;
         //color = [50,160,95];
-        norm = [-1,0,0];
+        norm = [1,0,0];
     }   
 
     else if(yDist < zDist){ // wants to render floor
@@ -346,7 +346,7 @@ function floorOrWall(point, direciton){ // calculates the distance of the ray to
     else{
         t = zDist;
         //color = [100, 200, 150];
-        norm = [0,0,-1];
+        norm = [0,0,1];
     }
     let D = scale(direciton, -1);
     color = scale(color, Luminence(point, norm, D, 100));
