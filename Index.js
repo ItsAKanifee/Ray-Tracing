@@ -15,7 +15,7 @@ const backwallDepth = 260 * pt;
 const ceilingHeight = -40 * pt;
 
 const lightPoint = { // put the light above the origin
-    pos: [canvas.width/2, canvas.height/2, 0],
+    pos: [canvas.width/2, -canvas.height/2, 0],
     intensity: 0.6,
     type: 'point',
 }
@@ -26,7 +26,7 @@ const ambLight = {
 }
 
 const dirLight = {
-    direction: [-1, 4, 4],
+    direction: [-canvas.width/2, -52 * pt, 260 * pt],
     intensity: 0.2,
     type: 'directional',
 }
@@ -53,7 +53,7 @@ class Ray{ //  a ray will have two vector variables, origin and direction
 
 const sphere1 = { // green sphere
     center: [-66*pt,40*pt,52*pt], // everything will be in front of the screen, therfore z should always be positive
-    radius: 100,
+    radius: 200,
     color : [0,255,0],
     specular: 500,
     reflect: 0,
@@ -61,7 +61,7 @@ const sphere1 = { // green sphere
 
 const sphere2 = { // red sphere
     center: [66*pt,250,600], // focus on changing these from pixel values to percentage of the screen so that way this can be rendered on screens that are smaller than mine
-    radius: 150,
+    radius: 250,
     color : [255, 0, 0],
     specular: 300,
     reflect: 0.1,
@@ -72,7 +72,7 @@ const sphere3 = { // blue sphere
     radius: 250,
     color : [0, 0, 255],
     specular: 200,
-    reflect: 0.5,
+    reflect: 0.6,
 }
 
 const spheres = [sphere1, sphere2, sphere3];
@@ -149,7 +149,7 @@ function rayCast(ray){
             let DR = dot(D, Normal);
             let R = sub(scale(Normal, 2*DR), D);
 
-            let reflected = reflect(Point, R, 20);
+            let reflected = reflect(Point, R, 10, sphereActive);
 
             let fHalf = scale(RGB, 1-r);
             let sHalf = scale(reflected, r);
@@ -168,10 +168,10 @@ function rayCast(ray){
 }
 
 
-function reflect(point, direction, reflections){ // returns the reflected light of the ray
+function reflect(point, direction, reflections, sphere = null){ // returns the reflected light of the ray
     let [minT, sphereActive] = shortestSphere(point, direction);
 
-    if(sphereActive == null){
+    if(sphereActive == null || sphere == sphereActive){
         return floorOrWall(point, direction);
     }
 
@@ -193,7 +193,7 @@ function reflect(point, direction, reflections){ // returns the reflected light 
     let DR = dot(D, Normal);
     let R = sub(scale(Normal, 2*DR), D);
 
-    let reflected = reflect(Point, R, reflections - 1);
+    let reflected = reflect(Point, R, reflections - 1, sphereActive);
 
     let fHalf = scale(RGB, 1-r);
     let sHalf = scale(reflected, r);
