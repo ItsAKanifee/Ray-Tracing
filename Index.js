@@ -4,7 +4,7 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const pt = canvas.height/100;
+const pt = canvas.height/100; // create a unit equivalent to 1% of the screen height
 console.log(pt);
 
 //Screen is located at (0, 0, 0)
@@ -53,9 +53,9 @@ class Ray{ //  a ray will have two vector variables, origin and direction
 
 const sphere1 = { // green sphere
     center: [-66*pt,40*pt,52*pt], // everything will be in front of the screen, therfore z should always be positive
-    radius: 200,
+    radius: 100,
     color : [0,255,0],
-    specular: 500,
+    specular: 1000,
     reflect: 0,
 }
 
