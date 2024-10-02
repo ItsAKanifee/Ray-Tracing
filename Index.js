@@ -92,8 +92,8 @@ function sphereIntersect(origin, direction, sphere){
 
     if(discriminant > 0){ // if discriminant is < 0, distance will be imginary, implying that the ray does not intersect with the sphere
 
-    let t1 = (-b - Math.sqrt(discriminant)) / (2*a);
-    let t2 = (-b + Math.sqrt(discriminant)) / (2*a);
+        let t1 = (-b - Math.sqrt(discriminant)) / (2*a);
+        let t2 = (-b + Math.sqrt(discriminant)) / (2*a);
 
         if(t1 > 0 && t1 < t){
             t = t1;
